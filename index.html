@@ -675,7 +675,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 // Get Rotarians
-                const rotariansResponse = await fetch('https://script.google.com/macros/s/AKfycbz26n8Xggui0TL7JRwzZGGYOXvcB_xPPkVVsFPqx209LPXuOnYMjEHfpGGTvUq0XciN/exec?action=getRotarians');
+                const rotariansResponse = await fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec?action=getRotarians');
                 const rotariansText = await rotariansResponse.text();
                 const rotariansMatch = rotariansText.match(/\[\{[\s\S]*\}\]/);
                 
@@ -691,7 +691,7 @@
                 }
                 
                 // Get Grant Limits
-                const limitsResponse = await fetch('https://script.google.com/macros/s/AKfycbz26n8Xggui0TL7JRwzZGGYOXvcB_xPPkVVsFPqx209LPXuOnYMjEHfpGGTvUq0XciN/exec?action=getGrantLimits');
+                const limitsResponse = await fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec?action=getGrantLimits');
                 const limitsText = await limitsResponse.text();
                 const limitsMatch = limitsText.match(/\{[^}]*\}/);
                 
@@ -845,7 +845,7 @@
                     fileBase64: data.fileBase64 ? data.fileBase64.substring(0, 50) + '...' : ''
                 });
 
-                fetch('https://script.google.com/macros/s/AKfycbz26n8Xggui0TL7JRwzZGGYOXvcB_xPPkVVsFPqx209LPXuOnYMjEHfpGGTvUq0XciN/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec', {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: {
