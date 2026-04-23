@@ -675,7 +675,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 // Get Rotarians
-                const rotariansResponse = await fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec?action=getRotarians');
+                const rotariansResponse = await fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec?action=getRotarians');
                 const rotariansText = await rotariansResponse.text();
                 const rotariansMatch = rotariansText.match(/\[\{[\s\S]*\}\]/);
                 
@@ -691,7 +691,7 @@
                 }
                 
                 // Get Grant Limits
-                const limitsResponse = await fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec?action=getGrantLimits');
+                const limitsResponse = await fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec?action=getGrantLimits');
                 const limitsText = await limitsResponse.text();
                 const limitsMatch = limitsText.match(/\{[^}]*\}/);
                 
@@ -738,6 +738,7 @@
 
         // Form submission
         function submitForm(event) {
+            console.log('submitForm called!', event);
             event.preventDefault();
             const form = event.target;
             const fileInput = document.getElementById('supportingDoc');
@@ -748,13 +749,17 @@
 
             // Show loading state
             const submitButton = event.target.querySelector('button[type="submit"]');
+            console.log('submitButton found:', submitButton);
             const originalButtonText = submitButton.textContent;
             submitButton.textContent = 'Submitting...';
             submitButton.disabled = true;
+            console.log('Button changed to Submitting...');
 
             // Handle file upload if present
             function processFileAndSubmit() {
+                console.log('processFileAndSubmit called');
                 if (fileInput.files.length > 0) {
+                    console.log('File detected:', fileInput.files[0].name);
                     const file = fileInput.files[0];
                     
                     // Validate file size
@@ -845,7 +850,7 @@
                     fileBase64: data.fileBase64 ? data.fileBase64.substring(0, 50) + '...' : ''
                 });
 
-                fetch('https://script.google.com/macros/s/AKfycbwQp7hvFQy3cUlAh4LFnncBYJtsZ1OcULQaakmcdT5vKfAQ3STR2xfCtWjfnBZBM7oy/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: {
@@ -894,6 +899,7 @@
                 });
             }
 
+            console.log('About to call processFileAndSubmit');
             processFileAndSubmit();
         }
         
