@@ -393,6 +393,7 @@
         </header>
 
         <main>
+            <form id="grantForm" class="form-container" onsubmit="submitForm(event)">
                 <!-- Section 1: Application Period -->
                 <div class="form-section">
                     <div class="section-header">
@@ -697,9 +698,12 @@
                 if (limitsMatch) {
                     const limits = JSON.parse(limitsMatch[0]);
                     const amountField = document.getElementById('amountField');
-                    amountField.min = limits.min;
-                    amountField.max = limits.max;
-                    amountField.placeholder = `$${limits.min} - $${limits.max}`;
+                    const minAmount = parseInt(limits.min) || 500;
+                    const maxAmount = parseInt(limits.max) || 1000;
+                    amountField.min = minAmount;
+                    amountField.max = maxAmount;
+                    amountField.placeholder = `$${minAmount} - $${maxAmount}`;
+                    console.log('Amount limits set:', { min: minAmount, max: maxAmount });
                 }
             } catch (err) {
                 console.error('Error loading data:', err);
@@ -787,6 +791,20 @@
 
             // Submit form data
             function submitFormData() {
+                const amount = parseInt(document.getElementById('amountField').value);
+                const minAmount = parseInt(document.getElementById('amountField').min) || 500;
+                const maxAmount = parseInt(document.getElementById('amountField').max) || 1000;
+                
+                // Validate amount is within range
+                if (amount < minAmount || amount > maxAmount) {
+                    document.getElementById('errorMessage').textContent = `Error: Amount must be between $${minAmount} and $${maxAmount}. You entered: $${amount}`;
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('successMessage').style.display = 'none';
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
+                    return;
+                }
+
                 const data = {
                     period: getSelectedRadio('period'),
                     orgName: document.getElementById('orgName').value,
