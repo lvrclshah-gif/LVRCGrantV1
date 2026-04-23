@@ -736,12 +736,17 @@
         function submitForm(event) {
             event.preventDefault();
             const form = event.target;
-            const formData = new FormData(form);
             const fileInput = document.getElementById('supportingDoc');
             let fileBase64 = '';
             let fileName = '';
             let fileType = '';
             let fileSize = 0;
+
+            // Show loading state
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
 
             // Handle file upload if present
             function processFileAndSubmit() {
@@ -753,6 +758,8 @@
                         document.getElementById('errorMessage').textContent = 'Error: File size exceeds 10MB limit.';
                         document.getElementById('errorMessage').style.display = 'block';
                         document.getElementById('successMessage').style.display = 'none';
+                        submitButton.textContent = originalButtonText;
+                        submitButton.disabled = false;
                         return;
                     }
 
@@ -769,6 +776,8 @@
                         document.getElementById('errorMessage').textContent = 'Error reading file. Please try again.';
                         document.getElementById('errorMessage').style.display = 'block';
                         document.getElementById('successMessage').style.display = 'none';
+                        submitButton.textContent = originalButtonText;
+                        submitButton.disabled = false;
                     };
                     reader.readAsDataURL(file);
                 } else {
@@ -779,63 +788,106 @@
             // Submit form data
             function submitFormData() {
                 const data = {
-                    period: formData.get('period'),
-                    orgName: formData.get('orgName'),
-                    address: formData.get('address'),
-                    website: formData.get('website'),
-                    contactName: formData.get('contactName'),
-                    contactTitle: formData.get('contactTitle'),
-                    phone: formData.get('phone'),
-                    fax: formData.get('fax'),
-                    email: formData.get('email'),
-                    orgType: formData.get('orgType'),
-                    incorp: formData.get('incorp'),
-                    taxId: formData.get('taxId'),
-                    hasBoard: formData.get('hasBoard'),
-                    prevGrants: formData.get('prevGrants'),
-                    projectTitle: formData.get('projectTitle'),
-                    projectDesc: formData.get('projectDesc'),
-                    location: formData.get('location'),
-                    amount: formData.get('amount'),
-                    startDate: formData.get('startDate'),
-                    endDate: formData.get('endDate'),
-                    payableTo: formData.get('payableTo'),
-                    signature: formData.get('signature'),
-                    signatureDate: formData.get('signatureDate'),
-                    isSchool: formData.get('isSchool') ? true : false,
-                    schoolApprover: formData.get('schoolApprover'),
-                    schoolEmail: formData.get('schoolEmail'),
-                    sponsorName: formData.get('sponsorName'),
-                    sponsorEmail: formData.get('sponsorEmail'),
+                    period: getSelectedRadio('period'),
+                    orgName: document.getElementById('orgName').value,
+                    address: document.getElementById('address').value,
+                    website: document.getElementById('website').value,
+                    contactName: document.getElementById('contactName').value,
+                    contactTitle: document.getElementById('contactTitle').value,
+                    phone: document.getElementById('phone').value,
+                    fax: document.getElementById('fax').value,
+                    email: document.getElementById('email').value,
+                    orgType: document.getElementById('orgType').value,
+                    incorp: document.getElementById('incorp').value,
+                    taxId: document.getElementById('taxId').value,
+                    hasBoard: getSelectedRadio('hasBoard'),
+                    prevGrants: document.getElementById('prevGrants').value,
+                    projectTitle: document.getElementById('projectTitle').value,
+                    projectDesc: document.getElementById('projectDesc').value,
+                    location: document.getElementById('location').value,
+                    amount: document.getElementById('amountField').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    payableTo: document.getElementById('payableTo').value,
+                    signature: document.getElementById('signature').value,
+                    signatureDate: document.getElementById('signatureDate').value,
+                    isSchool: document.getElementById('isSchool').checked,
+                    schoolApprover: document.getElementById('schoolApprover').value,
+                    schoolEmail: document.getElementById('schoolEmail').value,
+                    sponsorName: document.getElementById('sponsorName').value,
+                    sponsorEmail: document.getElementById('sponsorEmail').value,
                     fileName: fileName,
                     fileType: fileType,
                     fileBase64: fileBase64,
                     fileSize: fileSize
                 };
 
+                console.log('Submitting form data:', {
+                    ...data,
+                    fileBase64: data.fileBase64 ? data.fileBase64.substring(0, 50) + '...' : ''
+                });
+
                 fetch('https://script.google.com/macros/s/AKfycbz26n8Xggui0TL7JRwzZGGYOXvcB_xPPkVVsFPqx209LPXuOnYMjEHfpGGTvUq0XciN/exec', {
                     method: 'POST',
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.result === 'success') {
-                        document.getElementById('successMessage').style.display = 'block';
-                        document.getElementById('errorMessage').style.display = 'none';
-                        form.reset();
-                        window.scrollTo(0, 0);
-                    } else {
-                        throw new Error(result.message);
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('Response text:', text);
+                    try {
+                        const result = JSON.parse(text);
+                        console.log('Parsed result:', result);
+                        if (result.result === 'success') {
+                            document.getElementById('successMessage').style.display = 'block';
+                            document.getElementById('errorMessage').style.display = 'none';
+                            form.reset();
+                            window.scrollTo(0, 0);
+                        } else {
+                            throw new Error(result.message || 'Unknown error');
+                        }
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError, 'Text was:', text);
+                        // If response is not JSON, it might still be success
+                        if (text.includes('success') || text === 'OK') {
+                            document.getElementById('successMessage').style.display = 'block';
+                            document.getElementById('errorMessage').style.display = 'none';
+                            form.reset();
+                            window.scrollTo(0, 0);
+                        } else {
+                            throw new Error('Invalid response: ' + text);
+                        }
                     }
                 })
                 .catch(error => {
-                    document.getElementById('errorMessage').textContent = 'Error: ' + error.message;
+                    console.error('Fetch error:', error);
+                    document.getElementById('errorMessage').textContent = 'Error: ' + error.message + ' (Check browser console for details)';
                     document.getElementById('errorMessage').style.display = 'block';
                     document.getElementById('successMessage').style.display = 'none';
+                })
+                .finally(() => {
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
                 });
             }
 
             processFileAndSubmit();
+        }
+        
+        // Helper function to get selected radio button value
+        function getSelectedRadio(name) {
+            const radios = document.getElementsByName(name);
+            for (let radio of radios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return '';
         }
     </script>
 </body>
