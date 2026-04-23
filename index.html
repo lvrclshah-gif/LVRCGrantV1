@@ -845,51 +845,29 @@
                     fileSize: fileSize
                 };
 
-                console.log('Submitting form data:', {
-                    ...data,
-                    fileBase64: data.fileBase64 ? data.fileBase64.substring(0, 50) + '...' : ''
-                });
+                console.log('Submitting form data with no-cors mode');
 
+                // THE FIX: Use text/plain to bypass CORS Preflight
                 fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
                     method: 'POST',
-                    body: JSON.stringify(data),
+                    mode: 'no-cors', // Tells browser not to worry about CORS response headers
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(data)
                 })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.text();
-                })
-                .then(text => {
-                    console.log('Response text:', text);
-                    try {
-                        const result = JSON.parse(text);
-                        console.log('Parsed result:', result);
-                        if (result.result === 'success') {
-                            document.getElementById('successMessage').style.display = 'block';
-                            document.getElementById('errorMessage').style.display = 'none';
-                            form.reset();
-                            window.scrollTo(0, 0);
-                        } else {
-                            throw new Error(result.message || 'Unknown error');
-                        }
-                    } catch (parseError) {
-                        console.error('JSON parse error:', parseError, 'Text was:', text);
-                        // If response is not JSON, it might still be success
-                        if (text.includes('success') || text === 'OK') {
-                            document.getElementById('successMessage').style.display = 'block';
-                            document.getElementById('errorMessage').style.display = 'none';
-                            form.reset();
-                            window.scrollTo(0, 0);
-                        } else {
-                            throw new Error('Invalid response: ' + text);
-                        }
-                    }
+                .then(() => {
+                    // Since 'no-cors' mode won't let us read the 'success' JSON,
+                    // we assume success if the fetch doesn't throw an error.
+                    console.log('Form submitted successfully');
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    document.getElementById('grantForm').reset();
+                    window.scrollTo(0, 0);
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
-                    document.getElementById('errorMessage').textContent = 'Error: ' + error.message + ' (Check browser console for details)';
+                    document.getElementById('errorMessage').textContent = 'Submission Error. Please try again.';
                     document.getElementById('errorMessage').style.display = 'block';
                     document.getElementById('successMessage').style.display = 'none';
                 })
