@@ -848,17 +848,31 @@
                 console.log('Submitting form data with no-cors mode');
 
                 // THE FIX: Use text/plain to bypass CORS Preflight
-                fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
-                    method: 'POST',
-                    mode: 'no-cors', // Tells browser not to worry about CORS response headers
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(() => {
+                //fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
+                   // method: 'POST',
+                   // mode: 'no-cors', // Tells browser not to worry about CORS response headers
+                   // headers: {
+                   //     'Content-Type': 'text/plain;charset=utf-8'
+                   // },
+                   // body: JSON.stringify(data)
+               // })
+               // .then(() => {
                     // Since 'no-cors' mode won't let us read the 'success' JSON,
                     // we assume success if the fetch doesn't throw an error.
+                //lisa
+                fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
+                    method: 'POST',
+                    headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                    if (!result || result.result !== 'success') {
+                    throw new Error(result && result.message ? result.message : 'Submission failed');
+                    }
+                //lisa
                     console.log('Form submitted successfully');
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('errorMessage').style.display = 'none';
