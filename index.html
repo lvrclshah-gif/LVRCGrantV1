@@ -565,7 +565,7 @@
                     </div>
 
                     <div class="info-box">
-                        ⏰ <strong>Meeting Attendance Required:</strong> Recipients are expected to give a short presentation at a club meeting (Tuesdays, 8:15-9:30 AM). This is an important part of the grant agreement.
+                        ⏰ <strong>Meeting Attendance Required:</strong> <span id="meetingAttendanceText">Recipients are expected to give a short presentation at a club meeting (Tuesdays, 8:15-9:30 AM). This is an important part of the grant agreement.</span>
                     </div>
                 </div>
 
@@ -671,42 +671,91 @@
     </div>
 
     <script>
-        // Load rotarians and grant limits
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec';
+
+        function setAmountLimits(minAmount, maxAmount) {
+            const amountField = document.getElementById('amountField');
+            amountField.min = minAmount;
+            amountField.max = maxAmount;
+            amountField.placeholder = `$${minAmount} - $${maxAmount}`;
+        }
+
+        function loadSponsors(sponsors) {
+            const sponsorDropdown = document.getElementById('sponsorDropdown');
+            const customOption = sponsorDropdown.querySelector('[value="custom"]');
+
+            sponsorDropdown.querySelectorAll('option[data-dynamic="true"]').forEach(option => option.remove());
+
+            sponsors.forEach(sponsor => {
+                if (!sponsor.name || !sponsor.email) return;
+
+                const option = document.createElement('option');
+                option.value = JSON.stringify({ name: sponsor.name, email: sponsor.email });
+                option.textContent = sponsor.name;
+                option.setAttribute('data-dynamic', 'true');
+                sponsorDropdown.insertBefore(option, customOption);
+            });
+        }
+
+        function applyPageConfig(config) {
+            if (!config) return;
+
+            const minAmount = parseInt(config.minGrant || config.min || 500);
+            const maxAmount = parseInt(config.maxGrant || config.max || 1000);
+            setAmountLimits(minAmount, maxAmount);
+
+            if (config.clubName) {
+                const headerClubName = document.querySelector('.logo-section p');
+                const footerClubName = document.querySelector('footer strong');
+                if (headerClubName) headerClubName.textContent = config.clubName;
+                if (footerClubName) footerClubName.textContent = config.clubName;
+            }
+
+            if (config.meetingTimes) {
+                const meetingText = document.getElementById('meetingAttendanceText');
+                if (meetingText) {
+                    meetingText.textContent = `Recipients are expected to give a short presentation at a club meeting (${config.meetingTimes}). This is an important part of the grant agreement.`;
+                }
+            }
+
+            if (Array.isArray(config.sponsors)) {
+                loadSponsors(config.sponsors);
+            }
+        }
+
+        // Load page settings, sponsors, and grant limits from Google Sheet
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Get Rotarians
-                const rotariansResponse = await fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec?action=getRotarians');
-                const rotariansText = await rotariansResponse.text();
-                const rotariansMatch = rotariansText.match(/\[\{[\s\S]*\}\]/);
-                
-                if (rotariansMatch) {
-                    const rotarians = JSON.parse(rotariansMatch[0]);
-                    const sponsorDropdown = document.getElementById('sponsorDropdown');
-                    rotarians.forEach(rotarian => {
-                        const option = document.createElement('option');
-                        option.value = JSON.stringify(rotarian);
-                        option.textContent = rotarian.name;
-                        sponsorDropdown.insertBefore(option, sponsorDropdown.querySelector('[value="custom"]'));
-                    });
-                }
-                
-                // Get Grant Limits
-                const limitsResponse = await fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec?action=getGrantLimits');
-                const limitsText = await limitsResponse.text();
-                const limitsMatch = limitsText.match(/\{[^}]*\}/);
-                
-                if (limitsMatch) {
-                    const limits = JSON.parse(limitsMatch[0]);
-                    const amountField = document.getElementById('amountField');
-                    const minAmount = parseInt(limits.min) || 500;
-                    const maxAmount = parseInt(limits.max) || 1000;
-                    amountField.min = minAmount;
-                    amountField.max = maxAmount;
-                    amountField.placeholder = `$${minAmount} - $${maxAmount}`;
-                    console.log('Amount limits set:', { min: minAmount, max: maxAmount });
+                const configResponse = await fetch(`${SCRIPT_URL}?action=getPageConfig`);
+                const configText = await configResponse.text();
+                const config = JSON.parse(configText);
+
+                if (config && config.result !== 'error') {
+                    applyPageConfig(config);
+                    console.log('Page configuration loaded:', config);
+                    return;
                 }
             } catch (err) {
-                console.error('Error loading data:', err);
+                console.error('Error loading page configuration:', err);
+            }
+
+            // Fallback to the older endpoints if getPageConfig is not available yet
+            try {
+                const rotariansResponse = await fetch(`${SCRIPT_URL}?action=getRotarians`);
+                const rotarians = await rotariansResponse.json();
+                loadSponsors(rotarians);
+            } catch (err) {
+                console.error('Error loading sponsors:', err);
+            }
+
+            try {
+                const limitsResponse = await fetch(`${SCRIPT_URL}?action=getGrantLimits`);
+                const limits = await limitsResponse.json();
+                const minAmount = parseInt(limits.min) || 500;
+                const maxAmount = parseInt(limits.max) || 1000;
+                setAmountLimits(minAmount, maxAmount);
+            } catch (err) {
+                console.error('Error loading grant limits:', err);
             }
         });
 
@@ -848,31 +897,17 @@
                 console.log('Submitting form data with no-cors mode');
 
                 // THE FIX: Use text/plain to bypass CORS Preflight
-                //fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
-                   // method: 'POST',
-                   // mode: 'no-cors', // Tells browser not to worry about CORS response headers
-                   // headers: {
-                   //     'Content-Type': 'text/plain;charset=utf-8'
-                   // },
-                   // body: JSON.stringify(data)
-               // })
-               // .then(() => {
-                    // Since 'no-cors' mode won't let us read the 'success' JSON,
-                    // we assume success if the fetch doesn't throw an error.
-                //lisa
-                fetch('https://script.google.com/macros/s/AKfycbyptv8aDmvkBjHteFuhjdmUJugu9ccpFH-SqlYvjOv2BEFEe35Eptlf-O7ssJpdUeZ9/exec', {
+                fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors', // Tells browser not to worry about CORS response headers
                     headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
+                        'Content-Type': 'text/plain;charset=utf-8'
                     },
                     body: JSON.stringify(data)
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                    if (!result || result.result !== 'success') {
-                    throw new Error(result && result.message ? result.message : 'Submission failed');
-                    }
-                //lisa
+                })
+                .then(() => {
+                    // Since 'no-cors' mode won't let us read the 'success' JSON,
+                    // we assume success if the fetch doesn't throw an error.
                     console.log('Form submitted successfully');
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('errorMessage').style.display = 'none';
